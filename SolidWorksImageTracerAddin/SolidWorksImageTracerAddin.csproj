@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <OutputType>Library</OutputType>
+    <RootNamespace>SolidWorksImageTracerAddin</RootNamespace>
+    <AssemblyName>SolidWorksImageTracerAddin</AssemblyName>
+    <LangVersion>latest</LangVersion>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <RegisterForComInterop>true</RegisterForComInterop>
+    <Platforms>AnyCPU</Platforms>
+    <UseWindowsForms>true</UseWindowsForms>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="SolidWorks.Interop.sldworks" />
+    <Reference Include="SolidWorks.Interop.swconst" />
+    <Reference Include="SolidWorks.Interop.swpublished" />
+    <Reference Include="System.Drawing" />
+  </ItemGroup>
+</Project>
