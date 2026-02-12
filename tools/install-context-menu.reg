@@ -1,0 +1,8 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.sldprt\shell\ExportFlatPatternDXF]
+@="Export Flat Pattern DXF (laser)"
+"Icon"="C:\\Program Files\\SOLIDWORKS Corp\\SOLIDWORKS\\SLDWORKS.exe"
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.sldprt\shell\ExportFlatPatternDXF\command]
+@="\"C:\\Tools\\SheetMetalDxfExporter.Cli.exe\" \"%1\""
