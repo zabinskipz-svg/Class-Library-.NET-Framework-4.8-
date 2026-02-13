@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.InteropServices;
 
 namespace SheetMetalDxfExporter;
@@ -11,6 +10,8 @@ public sealed class SolidWorksAutomationService
     private const int SwDocPart = 1;
     private const int SwOpenDocOptionsSilent = 1;
     private const int ExportSheetMetalAction = 2;
+    private const int SwSaveAsCurrentVersion = 0;
+    private const int SwSaveAsOptionsSilent = 1;
 
     // Geometry + bend lines + forming tools + hidden edges + merge coplanar faces.
     private const int FlatPatternOptions = 1 + 4 + 8 + 16 + 64;
@@ -38,10 +39,11 @@ public sealed class SolidWorksAutomationService
                 throw new InvalidOperationException($"SolidWorks nie otworzył części. Errors={errors}, Warnings={warnings}");
             }
 
-            var exported = TryExportViaExportToDwg2(model, options.OutputDxfPath, options.InputPartPath);
+            var exported = TryExportViaExportToDwg2(model, options.OutputDxfPath, options.InputPartPath)
+                || TryExportViaSaveAs(model, options.OutputDxfPath);
             if (!exported)
             {
-                throw new InvalidOperationException("Eksport DXF nie powiódł się. Sprawdź, czy plik jest częścią blachową z rozłożeniem.");
+                throw new InvalidOperationException("Eksport DXF nie powiódł się. Sprawdź, czy plik jest częścią blachową z rozłożeniem i czy można wykonać 'Zapisz jako -> DXF' ręcznie.");
             }
 
             var fileName = Path.GetFileNameWithoutExtension(options.InputPartPath);
@@ -67,31 +69,61 @@ public sealed class SolidWorksAutomationService
 
     private static bool TryExportViaExportToDwg2(dynamic model, string outputDxfPath, string inputPartPath)
     {
-        var partDoc = model as object ?? throw new InvalidOperationException("Model nie jest poprawnym dokumentem części.");
-        var method = partDoc.GetType().GetMethod("ExportToDWG2", BindingFlags.Public | BindingFlags.Instance);
-        if (method == null)
-        {
-            return false;
-        }
-
         var alignment = new double[12];
         var views = Array.Empty<string>();
 
-        var args = new object?[]
+        if (File.Exists(outputDxfPath))
         {
-            outputDxfPath,
-            inputPartPath,
-            ExportSheetMetalAction,
-            true,
-            alignment,
-            false,
-            false,
-            FlatPatternOptions,
-            views,
-        };
+            File.Delete(outputDxfPath);
+        }
 
-        var result = method.Invoke(partDoc, args);
-        return result is bool ok && ok && File.Exists(outputDxfPath);
+        try
+        {
+            var result = model.ExportToDWG2(
+                outputDxfPath,
+                inputPartPath,
+                ExportSheetMetalAction,
+                true,
+                alignment,
+                false,
+                false,
+                FlatPatternOptions,
+                views);
+
+            return result is bool ok && ok && File.Exists(outputDxfPath);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static bool TryExportViaSaveAs(dynamic model, string outputDxfPath)
+    {
+        if (File.Exists(outputDxfPath))
+        {
+            File.Delete(outputDxfPath);
+        }
+
+        try
+        {
+            int errors = 0;
+            int warnings = 0;
+
+            var result = model.Extension.SaveAs(
+                outputDxfPath,
+                SwSaveAsCurrentVersion,
+                SwSaveAsOptionsSilent,
+                null,
+                ref errors,
+                ref warnings);
+
+            return result is bool ok && ok && File.Exists(outputDxfPath);
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private static string? ReadThicknessFromEquation(dynamic model)
